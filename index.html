@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8"><title>SI-BALITA</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#f5f7f6;--c:#fff;--t:#17302a;--m:#5f736d;--p:#0f766e;--b:#d9e2df;--r:#b42318;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1917;--c:#172522;--t:#e6f0ed;--m:#93a8a2;--p:#2dd4bf;--b:#2b3d39;--r:#f87171}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--p);color:#fff}
+header b{font-size:17px}header button{background:#fff2;color:#fff;border:1px solid #fff5}
+nav{display:flex;gap:4px;overflow-x:auto;padding:8px 10px;background:var(--c);border-bottom:1px solid var(--b)}
+nav button{white-space:nowrap;background:none;border:0;color:var(--m);padding:7px 11px;border-radius:8px}
+nav button.on{background:var(--p);color:#fff}
+main{padding:14px;max-width:1150px;margin:auto}
+h2{margin:4px 0 12px;font-size:19px}h3{margin:16px 0 8px;font-size:15px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.card{background:var(--c);border:1px solid var(--b);border-radius:12px;padding:12px}
+.k{font-size:26px;font-weight:700}.l{color:var(--m);font-size:12px}
+.tw{overflow-x:auto;background:var(--c);border:1px solid var(--b);border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:640px}th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--b);vertical-align:middle}
+th{font-size:12px;color:var(--m);background:var(--bg)}
+button,input,select,textarea{font:inherit;color:var(--t)}
+button{background:var(--p);color:#fff;border:0;border-radius:8px;padding:6px 11px;cursor:pointer}
+button.s{background:var(--c);color:var(--t);border:1px solid var(--b)}button.d{background:var(--r)}
+input,select,textarea{background:var(--c);border:1px solid var(--b);border-radius:8px;padding:6px 8px;max-width:100%}
+td input,td select{width:100%;min-width:70px}
+.bar{display:flex;align-items:flex-end;gap:10px;height:150px;padding:8px 4px}
+.bar div{flex:1;text-align:center;font-size:11px;color:var(--m);display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+.bar i{display:block;background:var(--p);border-radius:6px 6px 0 0;min-height:2px}
+.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;background:var(--bg);border:1px solid var(--b)}
+.ok{color:var(--p)}.no{color:var(--r)}
+.tool{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+#m{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;padding:14px;z-index:9}
+#m .box{background:var(--c);border-radius:14px;padding:16px;width:100%;max-width:440px;max-height:90vh;overflow:auto}
+#m label{display:block;margin:8px 0 2px;font-size:12px;color:var(--m)}#m input,#m select,#m textarea{width:100%}
+#lg{max-width:340px;margin:12vh auto;padding:0 14px}
+@media print{header,nav,.tool,button{display:none!important}}
+</style></head><body>
+<div id="app"></div><div id="m"></div>
+<script>
+const K='sibalita_v1',$=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const mk=o=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()+o);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')};
+const VER=['Belum diverifikasi','Sesuai','Tidak sesuai','Pindah domisili','Data ganda','Tidak ditemukan','Baru/belum terdata'];
+const OUT=['Pindah domisili','Data ganda','Tidak ditemukan'];
+const JT=['Reminder WhatsApp','Telepon','Kunjungan rumah','Penimbangan susulan','Tidak dapat dihubungi'];
+const AL=['Sakit','Bepergian','Lupa/tidak tahu jadwal','Tidak ada pendamping','Pindah','Lainnya'];
+const ALL=['dash','sasaran','verif','timbang','belum','remind','tindak','rekap','user','log'];
+const PERM={admin:ALL,gizi:ALL.filter(x=>x!='user'),kader:['dash','sasaran','verif','timbang','belum','remind','tindak']};
+const NAMA={dash:'Dashboard',sasaran:'Data Sasaran',verif:'Verifikasi',timbang:'Penimbangan',belum:'Belum Ditimbang',remind:'Reminder',tindak:'Tindak Lanjut',rekap:'Rekap & Laporan',user:'Pengguna',log:'Riwayat Data'};
+let db=load(),me=null,page='dash',bl=mk(0),fp='',ss=sessionStorage;
+function seed(){
+  const n=['Aisyah Putri','Budi Santoso','Citra Lestari','Dimas Pratama','Elsa Maharani','Farhan Akbar','Gita Permata','Hafiz Ramadhan','Intan Sari','Joko Widodo Jr','Kirana Dewi','Lutfi Hakim'],P=['Melati','Mawar','Anggrek'];
+  const balita=n.map((x,i)=>({id:uid(),nama:x,nik:'35170'+String(1000+i)+'0001',lahir:`202${3+i%3}-0${1+i%9}-1${i%9}`,jk:i%2?'L':'P',ibu:'Ibu '+x.split(' ')[1],wa:'628123450'+String(10+i),alamat:'Dsn. Contoh RT 0'+(1+i%4),pos:P[i%3],ver:i==11?'Belum diverifikasi':'Sesuai',ket:''}));
+  const timbang=[];balita.forEach((b,i)=>{if(i<8)timbang.push({id:uid(),bid:b.id,bulan:mk(-1),hadir:true,bb:10+i/2,tb:80+i,alasan:''});if(i<5)timbang.push({id:uid(),bid:b.id,bulan:mk(0),hadir:true,bb:10.5+i/2,tb:81+i,alasan:''})});
+  const d={balita,timbang,tindak:[],remind:[],pos:P,jadwal:{Melati:mk(0)+'-20',Mawar:mk(0)+'-22',Anggrek:mk(0)+'-24'},
+   users:[{id:uid(),un:'admin',pw:'admin123',nama:'Admin Puskesmas',role:'admin',pos:''},{id:uid(),un:'gizi',pw:'gizi123',nama:'Petugas Gizi',role:'gizi',pos:''},{id:uid(),un:'kader',pw:'kader123',nama:'Kader Melati',role:'kader',pos:'Melati'}],log:[]};
+  try{localStorage.setItem(K,JSON.stringify(d))}catch(e){}return d}
+function load(){try{const s=localStorage.getItem(K);if(s){const d=JSON.parse(s);if(d&&d.balita)return d}}catch(e){}return seed()}
+function save(){try{localStorage.setItem(K,JSON.stringify(db))}catch(e){toast('Gagal menyimpan data')}}
+function lg(a){db.log.unshift({t:new Date().toLocaleString('id-ID'),u:me?me.nama:'-',a});db.log=db.log.slice(0,300)}
+function toast(t){alert(t)}
+const vis=()=>db.balita.filter(b=>me.role!='kader'||b.pos==me.pos);
+const inS=b=>!OUT.includes(b.ver);
+const rec=(id,m=bl)=>db.timbang.find(r=>r.bid==id&&r.bulan==m);
+const done=(b,m=bl)=>{const r=rec(b.id,m);return !!(r&&r.hadir&&+r.bb>0)};
+const age=l=>{if(!l)return'-';const d=new Date(l),n=new Date();const m=(n.getFullYear()-d.getFullYear())*12+n.getMonth()-d.getMonth()-(n.getDate()<d.getDate()?1:0);return m<0?'-':Math.floor(m/12)+' th '+m%12+' bln'};
+const can=a=>me.role!='kader'||a!='del';
+const bn=id=>db.balita.find(b=>b.id==id);
+const pct=(d,s)=>s?Math.round(d/s*1000)/10:0;
+function stat(m,pos){const S=vis().filter(b=>inS(b)&&(!pos||b.pos==pos));const D=S.filter(b=>done(b,m));return{S:S.length,D:D.length}}
+function modal(t,f,v,ok,label){
+  v=v||{};let h=`<div class="box"><h3 style="margin-top:0">${t}</h3>`;
+  f.forEach(([k,l,ty,o])=>{h+=`<label>${l}</label>`;
+   if(ty=='sel')h+=`<select id="f_${k}">${o.map(x=>`<option ${x==v[k]?'selected':''}>${esc(x)}</option>`).join('')}</select>`;
+   else if(ty=='area')h+=`<textarea id="f_${k}" rows="3">${esc(v[k])}</textarea>`;
+   else h+=`<input id="f_${k}" type="${ty||'text'}" value="${esc(v[k])}">`});
+  h+=`<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end"><button class="s" onclick="cls()">Batal</button>${ok?`<button id="ok" class="${label=='Hapus'?'d':''}">${label||'Simpan'}</button>`:''}</div></div>`;
+  $('#m').innerHTML=h;$('#m').style.display='flex';
+  if(ok)$('#ok').onclick=()=>{const o={};f.forEach(([k])=>o[k]=$('#f_'+k).value.trim());if(ok(o)!==false)cls()}}
+function cls(){$('#m').style.display='none';$('#m').innerHTML=''}
+function ask(msg,fn){modal('Konfirmasi',[],{},()=>{fn()},'Hapus');$('#m .box h3').insertAdjacentHTML('afterend','<p>'+esc(msg)+'</p>')}
+function nav(p){page=p;render()}
+function login(){const u=db.users.find(x=>x.un==$('#un').value.trim()&&x.pw==$('#pw').value);
+  if(!u){$('#er').textContent='Username atau password salah';return}me=u;ss.setItem('u',u.id);page='dash';render()}
+function logout(){me=null;ss.removeItem('u');render()}
+function render(){
+  if(!me){const s=ss.getItem('u');me=db.users.find(x=>x.id==s)||null}
+  if(!me){$('#app').innerHTML=`<div id="lg"><div class="card"><h2>SI-BALITA</h2><p class="l">Sistem Informasi Sasaran & Penimbangan Balita</p><label class="l">Username</label><input id="un" style="width:100%"><label class="l">Password</label><input id="pw" type="password" style="width:100%" onkeydown="if(event.key=='Enter')login()"><p id="er" class="no"></p><button style="width:100%" onclick="login()">Masuk</button><p class="l">Contoh: admin/admin123, gizi/gizi123, kader/kader123</p></div></div>`;return}
+  if(!PERM[me.role].includes(page))page='dash';
+  const tabs=PERM[me.role].map(p=>`<button class="${p==page?'on':''}" onclick="nav('${p}')">${NAMA[p]}</button>`).join('');
+  $('#app').innerHTML=`<header><b>SI-BALITA</b><span>${esc(me.nama)} (${me.role}${me.pos?' · '+esc(me.pos):''}) <button onclick="logout()">Keluar</button></span></header><nav>${tabs}</nav><main>${P[page]()}</main>`}
+function pill(v){return `<span class="tag">${esc(v)}</span>`}
+function posSel(id,val,ch){const l=me.role=='kader'?[me.pos]:db.pos;return `<select id="${id}" onchange="${ch}">${me.role=='kader'?'':'<option value="">Semua Posyandu</option>'}${l.map(x=>`<option ${x==val?'selected':''}>${esc(x)}</option>`).join('')}</select>`}
+function blIn(){return `<input type="month" value="${bl}" onchange="bl=this.value||bl;render()">`}
+const fpv=()=>me.role=='kader'?me.pos:fp;
+const P={
+dash(){const s=stat(bl);let bars='',ms=[-5,-4,-3,-2,-1,0].map(mk);
+  ms.forEach(m=>{const x=stat(m),p=pct(x.D,x.S);bars+=`<div>${p}%<i style="height:${p*1.1}px"></i>${m.slice(5)}/${m.slice(2,4)}</div>`});
+  let rows=(me.role=='kader'?[me.pos]:db.pos).map(p=>{const x=stat(bl,p);return `<tr><td>${esc(p)}</td><td>${x.S}</td><td>${x.D}</td><td>${x.S-x.D}</td><td>${pct(x.D,x.S)}%</td></tr>`}).join('');
+  return `<h2>Dashboard</h2><div class="tool">${blIn()}</div><div class="g"><div class="card"><div class="k">${s.S}</div><div class="l">Total sasaran (S)</div></div><div class="card"><div class="k">${s.D}</div><div class="l">Sudah ditimbang (D)</div></div><div class="card"><div class="k">${s.S-s.D}</div><div class="l">Belum ditimbang</div></div><div class="card"><div class="k">${pct(s.D,s.S)}%</div><div class="l">D/S</div></div></div>
+  <h3>Grafik D/S 6 bulan terakhir</h3><div class="card"><div class="bar">${bars}</div></div>
+  <h3>Rekap D/S per Posyandu</h3><div class="tw"><table><tr><th>Posyandu<th>S<th>D<th>Belum<th>D/S</tr>${rows}</table></div>`},
+sasaran(){const L=vis();const rows=L.map(b=>`<tr><td>${esc(b.nama)}</td><td>${esc(b.nik)}</td><td>${esc(b.lahir)}<br><span class="l">${age(b.lahir)}</span></td><td>${b.jk}</td><td>${esc(b.ibu)}</td><td>${esc(b.wa)}</td><td>${esc(b.alamat)}</td><td>${esc(b.pos)}</td><td>${pill(b.ver)}</td><td style="white-space:nowrap"><button class="s" onclick="fb('${b.id}')">Ubah</button> ${can('del')?`<button class="d" onclick="delB('${b.id}')">Hapus</button>`:''}</td></tr>`).join('');
+  return `<h2>Data Sasaran Balita</h2><div class="tool"><button onclick="fb()">+ Tambah balita</button><button class="s" onclick="$('#imp').click()">Impor dari spreadsheet (CSV)</button><input id="imp" type="file" accept=".csv,.txt" hidden onchange="imp(this)"><button class="s" onclick="ex('sasaran')">Ekspor CSV</button></div><p class="l">Impor: kolom nama, nik, lahir (YYYY-MM-DD), jk, ibu, wa, alamat, posyandu. NIK yang sudah ada dilewati (anti-ganda).</p><div class="tw"><table><tr><th>Nama<th>NIK/ID<th>Lahir/usia<th>JK<th>Ibu/wali<th>WhatsApp<th>Alamat<th>Posyandu<th>Status data<th></tr>${rows||'<tr><td colspan=10>Belum ada data</td></tr>'}</table></div>`},
+verif(){const rows=vis().map(b=>`<tr><td>${esc(b.nama)}<br><span class="l">${esc(b.pos)}</span></td><td><select onchange="sv('${b.id}','ver',this.value)">${VER.map(v=>`<option ${v==b.ver?'selected':''}>${v}</option>`).join('')}</select></td><td><input value="${esc(b.ket)}" placeholder="Keterangan" onchange="sv('${b.id}','ket',this.value)"></td><td>${OUT.includes(b.ver)?'<span class="no">Keluar dari sasaran</span>':'<span class="ok">Masuk sasaran</span>'}</td></tr>`).join('');
+  return `<h2>Verifikasi Data Lapangan</h2><p class="l">Balita berstatus Pindah domisili, Data ganda, atau Tidak ditemukan otomatis tidak dihitung sebagai sasaran (S).</p><div class="tw"><table><tr><th>Balita<th>Status verifikasi<th>Keterangan<th>Efek</tr>${rows}</table></div>`},
+timbang(){const p=fpv();const L=vis().filter(b=>inS(b)&&(!p||b.pos==p));
+  const rows=L.map(b=>{const r=rec(b.id)||{};return `<tr><td>${esc(b.nama)}<br><span class="l">${age(b.lahir)}</span></td><td><select onchange="st('${b.id}','hadir',this.value)"><option value="">-</option><option value="1" ${r.hadir===true?'selected':''}>Hadir</option><option value="0" ${r.hadir===false?'selected':''}>Tidak hadir</option></select></td><td><input type="number" step="0.1" min="0" value="${esc(r.bb)}" ${r.hadir?'':'disabled'} onchange="st('${b.id}','bb',this.value)"></td><td><input type="number" step="0.1" min="0" value="${esc(r.tb)}" ${r.hadir?'':'disabled'} onchange="st('${b.id}','tb',this.value)"></td><td>${done(b)?'<span class="ok">Sudah</span>':'<span class="no">Belum</span>'}</td><td><button class="s" onclick="hist('${b.id}')">Riwayat</button></td></tr>`}).join('');
+  return `<h2>Pencatatan Penimbangan</h2><div class="tool">${blIn()}${posSel('fp',p,"fp=this.value;render()")}<span class="l">${p&&db.jadwal[p]?'Tanggal Posyandu: '+esc(db.jadwal[p]):'Pilih Posyandu untuk melihat tanggal'}</span></div><div class="tw"><table><tr><th>Balita<th>Kehadiran<th>BB (kg)<th>TB/PB (cm)<th>Status<th></tr>${rows}</table></div>`},
+belum(){const p=fpv();const L=vis().filter(b=>inS(b)&&!done(b)&&(!p||b.pos==p));
+  const rows=L.map(b=>{const r=rec(b.id)||{},t=db.tindak.filter(x=>x.bid==b.id&&x.bulan==bl).pop();return `<tr><td>${esc(b.nama)}</td><td>${esc(b.ibu)}</td><td><a href="https://wa.me/${esc(b.wa)}" target="_blank" rel="noopener">${esc(b.wa)}</a></td><td>${esc(b.alamat)}</td><td>${esc(b.pos)}</td><td><select onchange="st('${b.id}','alasan',this.value,1)"><option value="">-</option>${AL.map(a=>`<option ${a==r.alasan?'selected':''}>${a}</option>`).join('')}</select></td><td>${t?pill(t.jenis):'<span class="l">Belum</span>'}</td><td><button onclick="ft('${b.id}')">Tindak lanjut</button></td></tr>`}).join('');
+  return `<h2>Balita Belum Ditimbang (${L.length})</h2><div class="tool">${blIn()}${posSel('fp',p,"fp=this.value;render()")}</div><div class="tw"><table><tr><th>Balita<th>Ibu<th>WhatsApp<th>Alamat<th>Posyandu<th>Alasan<th>Tindak lanjut<th></tr>${rows||'<tr><td colspan=8>Semua sudah ditimbang 🎉</td></tr>'}</table></div>`},
+remind(){const p=fpv();const L=vis().filter(b=>inS(b)&&(!p||b.pos==p));
+  const js=(me.role=='kader'?[me.pos]:db.pos).map(x=>`<tr><td>${esc(x)}</td><td><input type="date" value="${esc(db.jadwal[x]||'')}" onchange="db.jadwal['${esc(x)}']=this.value;save();render()"></td><td>${rd(db.jadwal[x],3)}</td><td>${rd(db.jadwal[x],1)}</td></tr>`).join('');
+  const rows=L.map(b=>{const f=t=>{const r=db.remind.find(x=>x.bid==b.id&&x.bulan==bl&&x.tipe==t);return `<button class="${r?'s':''}" onclick="sendR('${b.id}','${t}')">${r?'✓ Terkirim · kirim ulang':'Kirim WA '+t}</button>`};return `<tr><td>${esc(b.nama)}<br><span class="l">${esc(b.ibu)} · ${esc(b.pos)}</span></td><td>${f('H-3')}</td><td>${f('H-1')}</td></tr>`}).join('');
+  return `<h2>Reminder Posyandu</h2><div class="tw"><table><tr><th>Posyandu<th>Jadwal<th>H-3<th>H-1</tr>${js}</table></div><h3>Kirim pesan WhatsApp</h3><div class="tool">${blIn()}${posSel('fp',p,"fp=this.value;render()")}</div><div class="tw"><table><tr><th>Balita<th>H-3<th>H-1</tr>${rows}</table></div>`},
+tindak(){const L=db.tindak.filter(t=>{const b=bn(t.bid);return b&&vis().includes(b)});
+  const rows=L.slice().reverse().map(t=>{const b=bn(t.bid);return `<tr><td>${esc(t.tgl)}</td><td>${esc(b.nama)}<br><span class="l">${esc(b.pos)}</span></td><td>${pill(t.jenis)}</td><td>${t.jenis=='Tidak dapat dihubungi'?'<span class="no">Belum terhubung</span>':'<span class="ok">Sudah dihubungi</span>'}</td><td>${esc(t.ket)}</td><td>${can('del')?`<button class="d" onclick="delT('${t.id}')">Hapus</button>`:''}</td></tr>`}).join('');
+  return `<h2>Tindak Lanjut</h2><p class="l">Tambah dari menu "Belum Ditimbang".</p><div class="tw"><table><tr><th>Tanggal<th>Balita<th>Jenis<th>Status<th>Hasil<th></tr>${rows||'<tr><td colspan=6>Belum ada</td></tr>'}</table></div>`},
+rekap(){const S=vis(),cnt=(a,f)=>a.filter(f).length;const s=stat(bl);
+  const vr=VER.map(v=>`<tr><td>${v}</td><td>${cnt(S,b=>b.ver==v)}</td></tr>`).join('');
+  const T=S.filter(inS),hadir=cnt(T,b=>{const r=rec(b.id);return r&&r.hadir}),tdk=cnt(T,b=>{const r=rec(b.id);return r&&r.hadir===false});
+  const tj=JT.map(j=>`<tr><td>${j}</td><td>${db.tindak.filter(t=>t.bulan==bl&&t.jenis==j&&S.includes(bn(t.bid))).length}</td></tr>`).join('');
+  const ms=[-5,-4,-3,-2,-1,0].map(mk).map(m=>{const x=stat(m);return `<tr><td>${m}</td><td>${x.S}</td><td>${x.D}</td><td>${pct(x.D,x.S)}%</td></tr>`}).join('');
+  return `<h2>Rekap & Laporan</h2><div class="tool">${blIn()}<button onclick="ex('sasaran')">Excel/CSV Sasaran</button><button onclick="ex('timbang')">Excel/CSV Penimbangan</button><button onclick="ex('belum')">Excel/CSV Belum Ditimbang</button><button class="s" onclick="window.print()">Cetak / PDF</button></div>
+  <div class="g"><div><h3>Data sasaran & verifikasi</h3><div class="tw"><table style="min-width:0"><tr><th>Status<th>Jumlah</tr>${vr}</table></div></div>
+  <div><h3>Kehadiran ${bl}</h3><div class="tw"><table style="min-width:0"><tr><td>Sasaran (S)<td>${s.S}<tr><td>Tercatat hadir<td>${hadir}<tr><td>Tercatat tidak hadir<td>${tdk}<tr><td>Sudah ditimbang (D)<td>${s.D}<tr><td>Belum ditimbang<td>${s.S-s.D}</table></div><h3>Tindak lanjut</h3><div class="tw"><table style="min-width:0">${tj}</table></div></div></div>
+  <h3>D/S bulanan</h3><div class="tw"><table style="min-width:0"><tr><th>Bulan<th>S<th>D<th>D/S</tr>${ms}</table></div><h3>D/S per Posyandu (${bl})</h3><div class="tw"><table style="min-width:0"><tr><th>Posyandu<th>S<th>D<th>D/S</tr>${db.pos.map(p=>{const x=stat(bl,p);return `<tr><td>${esc(p)}<td>${x.S}<td>${x.D}<td>${pct(x.D,x.S)}%`}).join('')}</table></div>`},
+user(){const rows=db.users.map(u=>`<tr><td>${esc(u.nama)}</td><td>${esc(u.un)}</td><td>${u.role}</td><td>${esc(u.pos||'Semua')}</td><td style="white-space:nowrap"><button class="s" onclick="fu('${u.id}')">Ubah</button> ${u.id!=me.id?`<button class="d" onclick="delU('${u.id}')">Hapus</button>`:''}</td></tr>`).join('');
+  return `<h2>Manajemen Pengguna</h2><div class="tool"><button onclick="fu()">+ Tambah pengguna</button></div><p class="l">Admin: semua akses · Petugas gizi: semua data & laporan, tanpa kelola pengguna · Kader: hanya Posyandu sendiri, tanpa hapus & laporan.</p><div class="tw"><table><tr><th>Nama<th>Username<th>Peran<th>Posyandu<th></tr>${rows}</table></div>`},
+log(){return `<h2>Riwayat Perubahan Data</h2><div class="tw"><table><tr><th>Waktu<th>Pengguna<th>Perubahan</tr>${db.log.map(l=>`<tr><td>${esc(l.t)}<td>${esc(l.u)}<td>${esc(l.a)}`).join('')||'<tr><td colspan=3>Kosong</td></tr>'}</table></div>`}};
+function rd(d,n){if(!d)return'-';const x=new Date(d);x.setDate(x.getDate()-n);return x.toLocaleDateString('id-ID')}
+function fb(id){const v=id?bn(id):{jk:'L',pos:me.role=='kader'?me.pos:db.pos[0],ver:'Baru/belum terdata'};
+  modal(id?'Ubah balita':'Tambah balita',[['nama','Nama balita'],['nik','NIK/ID balita'],['lahir','Tanggal lahir','date'],['jk','Jenis kelamin','sel',['L','P']],['ibu','Nama ibu/wali'],['wa','Nomor WhatsApp (62812...)'],['alamat','Alamat','area'],['pos','Posyandu','sel',me.role=='kader'?[me.pos]:db.pos]],v,o=>{
+    if(!o.nama||!o.lahir){toast('Nama dan tanggal lahir wajib diisi');return false}
+    o.wa=o.wa.replace(/\D/g,'').replace(/^0/,'62');
+    if(o.nik&&db.balita.some(b=>b.nik==o.nik&&b.id!=id)){toast('NIK/ID sudah terdaftar (data ganda)');return false}
+    if(id){Object.assign(bn(id),o);lg('Ubah balita '+o.nama)}else{db.balita.push({id:uid(),ver:'Baru/belum terdata',ket:'',...o});lg('Tambah balita '+o.nama)}
+    save();render()})}
+function delB(id){const b=bn(id);ask('Hapus '+b.nama+' beserta riwayat penimbangan, tindak lanjut, dan reminder-nya secara permanen?',()=>{
+  db.balita=db.balita.filter(x=>x.id!=id);db.timbang=db.timbang.filter(x=>x.bid!=id);db.tindak=db.tindak.filter(x=>x.bid!=id);db.remind=db.remind.filter(x=>x.bid!=id);lg('Hapus balita '+b.nama);save();cls();render()})}
+function delT(id){ask('Hapus catatan tindak lanjut ini?',()=>{db.tindak=db.tindak.filter(x=>x.id!=id);lg('Hapus tindak lanjut');save();cls();render()})}
+function delU(id){const u=db.users.find(x=>x.id==id);ask('Hapus pengguna '+u.nama+'?',()=>{db.users=db.users.filter(x=>x.id!=id);lg('Hapus pengguna '+u.un);save();cls();render()})}
+function sv(id,k,v){const b=bn(id);b[k]=v;lg(`Verifikasi ${b.nama}: ${k}=${v}`);save();render()}
+function st(id,k,v,keep){let r=rec(id);if(!r){r={id:uid(),bid:id,bulan:bl,hadir:null,bb:'',tb:'',alasan:''};db.timbang.push(r)}
+  if(k=='hadir'){if(v==''){db.timbang=db.timbang.filter(x=>x!=r)}else{r.hadir=v=='1';if(!r.hadir){r.bb='';r.tb=''}else r.alasan=''}}else r[k]=v;
+  lg(`Timbang ${bn(id).nama} ${bl}: ${k}=${v}`);save();render()}
+function hist(id){const b=bn(id),L=db.timbang.filter(r=>r.bid==id).sort((a,c)=>c.bulan.localeCompare(a.bulan));
+  modal('Riwayat '+esc(b.nama),[],{},null);$('#m .box h3').insertAdjacentHTML('afterend',`<table style="min-width:0">${L.map(r=>`<tr><td>${r.bulan}<td>${r.hadir?r.bb+' kg / '+r.tb+' cm':'Tidak hadir'}`).join('')||'<tr><td>Belum ada</td></tr>'}</table>`)}
+function ft(id){modal('Tindak lanjut: '+bn(id).nama,[['jenis','Jenis','sel',JT],['ket','Keterangan hasil','area']],{},o=>{db.tindak.push({id:uid(),bid:id,bulan:bl,jenis:o.jenis,ket:o.ket,tgl:new Date().toLocaleDateString('id-ID'),oleh:me.nama});lg(`Tindak lanjut ${bn(id).nama}: ${o.jenis}`);save();render()})}
+function sendR(id,t){const b=bn(id),d=db.jadwal[b.pos];
+  const msg=`Yth. ${b.ibu}, mengingatkan Posyandu ${b.pos} ${t=='H-3'?'3 hari lagi':'besok'}${d?' ('+new Date(d).toLocaleDateString('id-ID')+')':''}. Mohon bawa ${b.nama} untuk ditimbang. Terima kasih.`;
+  window.open('https://wa.me/'+b.wa+'?text='+encodeURIComponent(msg),'_blank');
+  if(!db.remind.some(x=>x.bid==id&&x.bulan==bl&&x.tipe==t))db.remind.push({id:uid(),bid:id,bulan:bl,tipe:t});lg(`Reminder ${t} ${b.nama}`);save();render()}
+function fu(id){const v=id?db.users.find(x=>x.id==id):{role:'kader'};
+  modal(id?'Ubah pengguna':'Tambah pengguna',[['nama','Nama'],['un','Username'],['pw','Password'],['role','Peran','sel',['admin','gizi','kader']],['pos','Posyandu (khusus kader)','sel',['',...db.pos]]],v,o=>{
+    if(!o.nama||!o.un||o.pw.length<6){toast('Nama, username, dan password (min. 6 karakter) wajib');return false}
+    if(db.users.some(u=>u.un==o.un&&u.id!=id)){toast('Username sudah dipakai');return false}
+    if(o.role=='kader'&&!o.pos){toast('Kader harus punya Posyandu');return false}
+    if(o.role!='kader')o.pos='';
+    if(id)Object.assign(db.users.find(x=>x.id==id),o);else db.users.push({id:uid(),...o});lg('Simpan pengguna '+o.un);save();render()})}
+function csvRows(n){const S=vis();
+  if(n=='sasaran')return [['Nama','NIK','Lahir','JK','Ibu','WA','Alamat','Posyandu','Status']].concat(S.map(b=>[b.nama,b.nik,b.lahir,b.jk,b.ibu,b.wa,b.alamat,b.pos,b.ver]));
+  if(n=='timbang')return [['Bulan','Nama','Posyandu','Hadir','BB','TB','Alasan']].concat(db.timbang.filter(r=>r.bulan==bl&&S.includes(bn(r.bid))).map(r=>{const b=bn(r.bid);return [r.bulan,b.nama,b.pos,r.hadir?'Ya':'Tidak',r.bb,r.tb,r.alasan]}));
+  return [['Nama','Ibu','WA','Alamat','Posyandu','Alasan']].concat(S.filter(b=>inS(b)&&!done(b)).map(b=>[b.nama,b.ibu,b.wa,b.alamat,b.pos,(rec(b.id)||{}).alasan||'']))}
+function ex(n){const t='\ufeff'+csvRows(n).map(r=>r.map(c=>'"'+String(c??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv'}));a.download='sibalita-'+n+'-'+bl+'.csv';a.click()}
+function parse(t){const d=t.indexOf(';')>-1&&t.split('\n')[0].split(';').length>t.split('\n')[0].split(',').length?';':',';const R=[];let r=[],c='',q=false;
+  for(let i=0;i<t.length;i++){const ch=t[i];if(q){if(ch=='"'&&t[i+1]=='"'){c+='"';i++}else if(ch=='"')q=false;else c+=ch}else if(ch=='"')q=true;else if(ch==d){r.push(c);c=''}else if(ch=='\n'){r.push(c);R.push(r);r=[];c=''}else if(ch!='\r')c+=ch}
+  if(c||r.length){r.push(c);R.push(r)}return R.filter(x=>x.some(y=>y.trim()))}
+function imp(el){const f=el.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{
+  const R=parse(String(rd.result).replace(/^\ufeff/,''));const h=R.shift().map(x=>x.trim().toLowerCase());let add=0,skip=0;
+  R.forEach(r=>{const o={};h.forEach((k,i)=>o[k]=(r[i]||'').trim());if(!o.nama||!o.lahir){skip++;return}
+    if(o.nik&&db.balita.some(b=>b.nik==o.nik)){skip++;return}
+    let p=o.posyandu||db.pos[0];if(me.role=='kader')p=me.pos;if(!db.pos.includes(p)){db.pos.push(p);db.jadwal[p]=''}
+    db.balita.push({id:uid(),nama:o.nama,nik:o.nik||'',lahir:o.lahir,jk:(o.jk||'L').toUpperCase().slice(0,1),ibu:o.ibu||'',wa:(o.wa||'').replace(/\D/g,'').replace(/^0/,'62'),alamat:o.alamat||'',pos:p,ver:'Baru/belum terdata',ket:''});add++});
+  lg(`Impor CSV: ${add} ditambah, ${skip} dilewati`);save();render();toast(`Impor selesai: ${add} ditambah, ${skip} dilewati (kosong/ganda).`)};rd.readAsText(f);el.value=''}
+render();
+</script></body></html>
